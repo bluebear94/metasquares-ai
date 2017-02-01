@@ -85,8 +85,8 @@ Game& Game::operator=(const Game& other) {
   return *this;
 }
 
-Eval evaluate(Eval& e, int origPlayer, int depth = 0, int moveLimit = 50000) {
-  if (moveLimit <= 1 && e.game->getCurrentPlayer() == origPlayer)
+Eval evaluate(Eval& e, int origPlayer, int depth = 0, int alpha = INT_MIN, int beta = INT_MAX, int moveLimit = 20000000) {
+  if (moveLimit <= 1)
     return e;
   Game& g = *(e.game);
   int player = g.getCurrentPlayer();
@@ -108,13 +108,13 @@ Eval evaluate(Eval& e, int origPlayer, int depth = 0, int moveLimit = 50000) {
       ep.row = i;
       ep.col = j;
       ep.game->move(i, j);
-      Eval next = evaluate(ep, origPlayer, depth + 1, moveLimit / totalMoves);
+      Eval next = evaluate(ep, origPlayer, depth + 1, alpha, beta, moveLimit / totalMoves);
       int newScore = next.game->netScore(player);
-      if (depth == 0)
+      /* if (depth == 0)
         std::cout << "By picking " << i << ' ' << j
-          << ", we can get a score of " << newScore << ".\n";
+          << ", we can get a score of " << newScore << ".\n"; */
       if (newScore > maxScore) {
-        if (depth == 0) std::cout << "(new best) \n";
+        // if (depth == 0) std::cout << "(new best) \n";
         maxScore = newScore;
         delete bestForYou.game;
         bestForYou = ep;
@@ -123,6 +123,10 @@ Eval evaluate(Eval& e, int origPlayer, int depth = 0, int moveLimit = 50000) {
       }
       if (next.game != ep.game)
         delete next.game;
+      bool isMe = player == origPlayer;
+      if (isMe && newScore > alpha) alpha = newScore;
+      if (!isMe && -newScore < beta) beta = -newScore;
+      if (beta <= alpha) break;
     }
   }
   return bestForYou;
